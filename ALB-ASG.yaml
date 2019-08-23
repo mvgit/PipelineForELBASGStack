@@ -446,7 +446,8 @@ Resources:
         config:
           packages:
             yum:
-              httpd: []
+              httpd: [24]
+              ruby: []
           files:
             "/var/www/html/index.html":
               content:
@@ -497,6 +498,24 @@ Resources:
               mode: '000400'
               owner: root
               group: root
+            "/home/ec2-user/install"
+              source:
+                Fn::Join:
+                  - ''
+                  - - https://aws-codedeploy-
+                    - Ref: AWS::Region
+                    - ".s3.amazonaws.com/latest/install"
+              mode: '000755'
+          commands:
+            00-install-agent:
+              command: "./install auto"
+              cwd: "/home/ec2-user/"
+            01-ELBHealthCheck:
+              command: !Sub
+                'until [ "$state" == "\"InService\"" ]; do state=$(aws --region ${AWS::Region} elb describe-instance-health
+                 --load-balancer-name ${ApplicationLoadBalancer}
+                 --instances $(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+                 --query InstanceStates[0].State); sleep 10; done'
           services:
             sysvinit:
               httpd:
@@ -509,6 +528,8 @@ Resources:
                 - "/etc/cfn/cfn-hup.conf"
                 - "/etc/cfn/hooks.d/cfn-auto-reloader.conf"
     Properties:
+      AssociatePublicIpAddress: true
+      IamInstanceProfile: !Ref 'WebServerInstanceProfile'
       KeyName:
         Ref: KeyName
       ImageId:
@@ -528,6 +549,7 @@ Resources:
           Fn::Join:
           - ''
           - - "#!/bin/bash -xe\n"
+            - "exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1"
             - 'yum update -y aws-cfn-bootstrap'
             - "\n"
             - "/opt/aws/bin/cfn-init -v "
@@ -587,6 +609,28 @@ Resources:
         CidrIp: 0.0.0.0/0
       VpcId:
         Ref: VpcId
+  WebServerInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles: [!Ref 'DescribeHealthAndCodeDeployRole']
+  DescribeHealthAndCodeDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ec2.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      Policies:
+      - PolicyName: describe-instance-health-and-code-deploy-permission-policy
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action: ['elasticloadbalancing:DescribeInstanceHealth', 's3:Get*', 's3:List*']
+            Resource: '*'
 Outputs:
   URL:
     Description: URL of the website
