@@ -405,16 +405,19 @@ Resources:
   WebServerGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
+      HealthCheckType: ELB
+      HealthCheckGracePeriod: 300
       VPCZoneIdentifier:
         Ref: Subnets
       LaunchConfigurationName:
         Ref: LaunchConfig
-      MinSize: '2'
+      MinSize: '3'
       MaxSize: '5'
       TargetGroupARNs:
       - Ref: ALBTargetGroup
     CreationPolicy:
       ResourceSignal:
+        Count: 2 # should be equal to MinSize
         Timeout: PT15M
     UpdatePolicy:
       AutoScalingRollingUpdate:
@@ -443,10 +446,14 @@ Resources:
     Metadata:
       Comment: Install a simple application
       AWS::CloudFormation::Init:
-        config:
+        configSets:
+          ascending:
+            - "config1"
+            #- "config2"
+        config1:
           packages:
             yum:
-              httpd: [24]
+              httpd: []
               ruby: []
           files:
             "/var/www/html/index.html":
@@ -498,24 +505,18 @@ Resources:
               mode: '000400'
               owner: root
               group: root
-            "/home/ec2-user/install"
+            "/home/ec2-user/install":
               source:
                 Fn::Join:
-                  - ''
-                  - - https://aws-codedeploy-
-                    - Ref: AWS::Region
-                    - ".s3.amazonaws.com/latest/install"
+                - ''
+                - - "https://aws-codedeploy-"
+                  - Ref: AWS::Region
+                  - ".s3.amazonaws.com/latest/install"
               mode: '000755'
           commands:
             00-install-agent:
               command: "./install auto"
               cwd: "/home/ec2-user/"
-            01-ELBHealthCheck:
-              command: !Sub
-                'until [ "$state" == "\"InService\"" ]; do state=$(aws --region ${AWS::Region} elb describe-instance-health
-                 --load-balancer-name ${ApplicationLoadBalancer}
-                 --instances $(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-                 --query InstanceStates[0].State); sleep 10; done'
           services:
             sysvinit:
               httpd:
@@ -527,6 +528,14 @@ Resources:
                 files:
                 - "/etc/cfn/cfn-hup.conf"
                 - "/etc/cfn/hooks.d/cfn-auto-reloader.conf"
+        # config2:
+          # commands:
+          #     01-ELBHealthCheck:
+          #       command: !Sub
+          #         'until [ "$state" == "\"InService\"" ]; do state=$(aws --region ${AWS::Region} elb describe-instance-health
+          #         --load-balancer-name ${ApplicationLoadBalancer}
+          #         --instances $(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+          #         --query InstanceStates[0].State); sleep 10; done'
     Properties:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref 'WebServerInstanceProfile'
@@ -550,9 +559,11 @@ Resources:
           - ''
           - - "#!/bin/bash -xe\n"
             - "exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1"
+            - "\n"
             - 'yum update -y aws-cfn-bootstrap'
             - "\n"
             - "/opt/aws/bin/cfn-init -v "
+            - "         -c ascending"
             - "         --stack "
             - Ref: AWS::StackName
             - "         --resource LaunchConfig "
@@ -566,6 +577,7 @@ Resources:
             - "         --region "
             - Ref: AWS::Region
             - "\n"
+            - "echo end of user data"
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
