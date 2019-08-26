@@ -18,7 +18,7 @@ Parameters:
     Description: The name of the S3 bucket that contains the source artifact, which must be in the same region as this stack
     Type: String
   SourceS3Key:
-    Default: albasg.zip
+    Default: Archive.zip
     Description: The file name of the source artifact, such as myfolder/myartifact.zip
     Type: String
   TemplateFileName:
@@ -122,6 +122,7 @@ Resources:
                 - Name: TemplateSource
               Configuration:
                 ActionMode: REPLACE_ON_FAILURE
+                Capabilities: CAPABILITY_IAM,CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
                 RoleArn: !GetAtt [CFNRole, Arn]
                 StackName: !Ref TestStackName
                 TemplateConfiguration: !Sub "TemplateSource::${TestStackConfig}"
@@ -200,15 +201,16 @@ Resources:
         Version: '2012-10-17'
       Path: /
       Policies:
-        - PolicyName: CloudFormationRole
+        - PolicyName: CloudFormationRole #AutoScalingFullAccess AWS managed policy is required.
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
               - Action:
                   - 'ec2:*'
+                  - 'iam:*'
+                  - 'elasticloadbalancing:*'
                 Effect: Allow
                 Resource: '*'
-              
   PipelineRole:
     Type: AWS::IAM::Role
     Properties:
