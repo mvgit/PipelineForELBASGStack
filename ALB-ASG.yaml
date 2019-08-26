@@ -417,7 +417,7 @@ Resources:
       - Ref: ALBTargetGroup
     CreationPolicy:
       ResourceSignal:
-        Count: 2 # should be equal to MinSize
+        Count: 3 # should be equal to MinSize
         Timeout: PT15M
     UpdatePolicy:
       AutoScalingRollingUpdate:
