@@ -2,6 +2,7 @@
   "Parameters" : {
     "KeyName" : "TestPair",
     "VpcId" : "vpc-7862d102",
-    "Subnets" : "subnet-1077415a,subnet-54fca55b,subnet-64f19603"
+    "Subnets" : "subnet-1077415a,subnet-54fca55b,subnet-64f19603",
+    "pMinSize" : "2"
   }
 }

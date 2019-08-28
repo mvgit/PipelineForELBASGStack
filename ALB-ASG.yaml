@@ -7,6 +7,11 @@ Description: 'AWS CloudFormation Sample Template AutoScalingScheduledAction: Cre
   Application Load Balancer. You will be billed for the AWS resources used if you
   create a stack from this template.'
 Parameters:
+#add a parameter for minsize and use it for count as well.
+  pMinSize:
+    Type: Number
+    Description: MinSize for ASG
+    Default: 2
   VpcId:
     Type: AWS::EC2::VPC::Id
     Description: VpcId of your existing Virtual Private Cloud (VPC)
@@ -411,13 +416,15 @@ Resources:
         Ref: Subnets
       LaunchConfigurationName:
         Ref: LaunchConfig
-      MinSize: '3'
-      MaxSize: '5'
+      MinSize: 
+        Ref: pMinSize
+      MaxSize: '2'
       TargetGroupARNs:
       - Ref: ALBTargetGroup
     CreationPolicy:
       ResourceSignal:
-        Count: 3 # should be equal to MinSize
+        Count:
+          Ref: pMinSize
         Timeout: PT15M
     UpdatePolicy:
       AutoScalingRollingUpdate:
@@ -569,6 +576,8 @@ Resources:
             - "         --resource LaunchConfig "
             - "         --region "
             - Ref: AWS::Region
+            - "         --role "
+            - Ref: DescribeHealthAndCodeDeployRole
             - "\n"
             - "/opt/aws/bin/cfn-signal -e $? "
             - "         --stack "
@@ -576,6 +585,8 @@ Resources:
             - "         --resource WebServerGroup "
             - "         --region "
             - Ref: AWS::Region
+            - "         --role "
+            - Ref: DescribeHealthAndCodeDeployRole
             - "\n"
             - "echo end of user data"
   ApplicationLoadBalancer:
@@ -641,7 +652,7 @@ Resources:
         PolicyDocument:
           Statement:
           - Effect: Allow
-            Action: ['elasticloadbalancing:DescribeInstanceHealth', 's3:Get*', 's3:List*']
+            Action: ['elasticloadbalancing:DescribeInstanceHealth', 's3:Get*', 's3:List*','cloudformation:*']
             Resource: '*'
 Outputs:
   URL:
