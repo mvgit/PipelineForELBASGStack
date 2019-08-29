@@ -122,11 +122,27 @@ Resources:
                 - Name: TemplateSource
               Configuration:
                 ActionMode: REPLACE_ON_FAILURE
-                Capabilities: CAPABILITY_IAM,CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
+                Capabilities: CAPABILITY_IAM,CAPABILITY_NAMED_IAM
                 RoleArn: !GetAtt [CFNRole, Arn]
                 StackName: !Ref TestStackName
                 TemplateConfiguration: !Sub "TemplateSource::${TestStackConfig}"
                 TemplatePath: !Sub "TemplateSource::${TemplateFileName}"
+              RunOrder: '1'
+            - Name: CreateDeploymentResources
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              InputArtifacts:
+                - Name: TemplateSource
+              Configuration:
+                ActionMode: REPLACE_ON_FAILURE
+                Capabilities: CAPABILITY_IAM,CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt [CFNRole, Arn]
+                StackName: CodeDeploymentStack
+                #TemplateConfiguration: !Sub "TemplateSource::${TestStackConfig}"
+                TemplatePath: !Sub "TemplateSource::CodeDeploymentResources.yaml"
               RunOrder: '1'
             - Name: ApproveTestStack
               ActionTypeId:
@@ -201,7 +217,7 @@ Resources:
         Version: '2012-10-17'
       Path: /
       Policies:
-        - PolicyName: CloudFormationRole #AutoScalingFullAccess AWS managed policy is required.
+        - PolicyName: CloudFormationRole
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -209,6 +225,8 @@ Resources:
                   - 'ec2:*'
                   - 'iam:*'
                   - 'elasticloadbalancing:*'
+                  - 'autoscaling:*'
+                  - 'codedeploy:*'
                 Effect: Allow
                 Resource: '*'
   PipelineRole:

@@ -647,14 +647,29 @@ Resources:
             Service: [ec2.amazonaws.com]
           Action: ['sts:AssumeRole']
       Path: /
+      # ManagedPolicyArns:
+      #- arn:aws:iam::aws:policy/AWSCloudFormationReadOnlyAccess
       Policies:
       - PolicyName: describe-instance-health-and-code-deploy-permission-policy
         PolicyDocument:
           Statement:
           - Effect: Allow
-            Action: ['elasticloadbalancing:DescribeInstanceHealth', 's3:Get*', 's3:List*','cloudformation:*']
+            Action: ['elasticloadbalancing:DescribeInstanceHealth', 's3:Get*', 's3:List*', 'cloudformation:*']
             Resource: '*'
 Outputs:
+  oASGName:
+    Value: 
+      Ref: WebServerGroup
+    Export:
+      Name: ExNWWebServerGroup
+  oALBName:
+    Value: !GetAtt ApplicationLoadBalancer.LoadBalancerName
+    Export:
+      Name: ExNWApplicationLoadBalancer
+  oALBTargetGroupName:
+    Value: !GetAtt ALBTargetGroup.TargetGroupName
+    Export:
+      Name: ExNWALBTargetGroup
   URL:
     Description: URL of the website
     Value:

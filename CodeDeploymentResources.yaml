@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS CloudFormation Sample Template AutoScalingScheduledAction: Create
+  a load balanced, Auto Scaled sample website. This example creates an Auto Scaling
+  group with time-based scheduled actions behind a load balancer with a simple health
+  check. **WARNING** This template creates one or more Amazon EC2 instances and an
+  Application Load Balancer. You will be billed for the AWS resources used if you
+  create a stack from this template.'
+Resources:
+  CodeDeployApplication:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ComputePlatform: Server
+
+  CodeDeploymentGroup:
+    Type: AWS::CodeDeploy::DeploymentGroup
+    Properties: 
+      ApplicationName: 
+        Ref: CodeDeployApplication
+      #AutoRollbackConfiguration: 
+      #  AutoRollbackConfiguration
+      AutoScalingGroups: 
+        - !ImportValue ExNWWebServerGroup
+      DeploymentConfigName: CodeDeployDefault.AllAtOnce
+      # DeploymentStyle: 
+      #     DeploymentOption: IN_PLACE
+      #     DeploymentType: WITHOUT_TRAFFIC_CONTROL
+      # LoadBalancerInfo: 
+      #   ElbInfoList:
+      #     - Name: !ImportValue ExNWApplicationLoadBalancer
+      #   TargetGroupInfoList: 
+      #     - Name: !ImportValue ExNWALBTargetGroup
+      ServiceRoleArn: !GetAtt CodeDeployServiceIAMRole.Arn
+  
+  CodeDeployServiceIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: CodeDeployTrustPolicy
+          Effect: Allow
+          Principal:
+            Service:
+            - codedeploy.amazonaws.com
+          Action: sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole
+
