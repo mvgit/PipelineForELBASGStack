@@ -21,6 +21,14 @@ Parameters:
     Default: AppCode.zip
     Description: The file name of the source artifact, such as myfolder/myartifact.zip
     Type: String
+  CodeDeployApplicationName:
+    Description: A name for CodeDeploy Application
+    Type: String
+    Default: NWCodeDep
+  CodeDeployDeploymentGroupName:
+    Description: A name for CodeDeploy deployment group name
+    Type: String
+    Default: NWDGV10
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -31,7 +39,11 @@ Metadata:
           - PipelineName
           - S3Bucket
           - SourceS3Key
- 
+      - Label:
+          default: "CodeDeploy Stage Settings"
+        Parameters:
+          - CodeDeployApplicationName
+          - CodeDeployDeploymentGroupName
 
 Resources:
   ArtifactStoreBucket:
@@ -39,7 +51,6 @@ Resources:
     Properties:
       VersioningConfiguration:
         Status: Enabled
-
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
@@ -75,10 +86,9 @@ Resources:
               InputArtifacts:
                 - Name: TemplateSource
               Configuration:
-                ApplicationName: "NWCodeDep"
-                DeploymentGroupName: "NWDGV10"
+                ApplicationName: !Ref CodeDeployApplicationName
+                DeploymentGroupName: !Ref CodeDeployDeploymentGroupName
               RunOrder: '1'
-  
   PipelineRole:
     Type: AWS::IAM::Role
     Properties:
@@ -91,34 +101,108 @@ Resources:
         Version: '2012-10-17'
       Path: /
       Policies:
-        git- PolicyName: CodePipelineAccess
+        - PolicyName: CodePipelineAccess
           PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
+           Version: '2012-10-17'
+           Statement:
               - Action:
-                - 's3:*'
-                - 'cloudformation:CreateStack'
-                - 'cloudformation:DescribeStacks'
-                - 'cloudformation:DeleteStack'
-                - 'cloudformation:UpdateStack'
-                - 'cloudformation:CreateChangeSet'
-                - 'cloudformation:ExecuteChangeSet'
-                - 'cloudformation:DeleteChangeSet'
-                - 'cloudformation:DescribeChangeSet'
-                - 'cloudformation:SetStackPolicy'
-                - 'iam:PassRole'
-                - 'sns:Publish'
-                - 'ec2:DescribeAccountAttributes'
-                - 'ec2:DescribeAddresses'
-                - 'ec2:DescribeInternetGateways'
-                - 'ec2:DescribeSecurityGroups'
-                - 'ec2:DescribeSubnets'
-                - 'ec2:DescribeVpcs'
-                - 'ec2:DescribeInstances'
-                - 'iam:CreateServiceLinkedRole'
-                - 'elasticloadbalancing:CreateTargetGroup'
-                - 'elasticloadbalancingv2:*'
-                - 'elasticloadbalancing:*'
-                - 'autoscaling:*'
+                - iam:PassRole
+                Resource: "*"
                 Effect: Allow
-                Resource: '*'
+                Condition:
+                  StringEqualsIfExists:
+                    iam:PassedToService:
+                    - cloudformation.amazonaws.com
+                    - elasticbeanstalk.amazonaws.com
+                    - ec2.amazonaws.com
+                    - ecs-tasks.amazonaws.com
+              - Action:
+                - codecommit:CancelUploadArchive
+                - codecommit:GetBranch
+                - codecommit:GetCommit
+                - codecommit:GetUploadArchiveStatus
+                - codecommit:UploadArchive
+                Resource: "*"
+                Effect: Allow
+              - Action:
+                - codedeploy:CreateDeployment
+                - codedeploy:GetApplication
+                - codedeploy:GetApplicationRevision
+                - codedeploy:GetDeployment
+                - codedeploy:GetDeploymentConfig
+                - codedeploy:RegisterApplicationRevision
+                Resource: "*"
+                Effect: Allow
+              - Action:
+                - elasticbeanstalk:*
+                - ec2:*
+                - elasticloadbalancing:*
+                - autoscaling:*
+                - cloudwatch:*
+                - s3:*
+                - sns:*
+                - cloudformation:*
+                - rds:*
+                - sqs:*
+                - ecs:*
+                Resource: "*"
+                Effect: Allow
+              - Action:
+                - lambda:InvokeFunction
+                - lambda:ListFunctions
+                Resource: "*"
+                Effect: Allow
+              - Action:
+                - opsworks:CreateDeployment
+                - opsworks:DescribeApps
+                - opsworks:DescribeCommands
+                - opsworks:DescribeDeployments
+                - opsworks:DescribeInstances
+                - opsworks:DescribeStacks
+                - opsworks:UpdateApp
+                - opsworks:UpdateStack
+                Resource: "*"
+                Effect: Allow
+              - Action:
+                - cloudformation:CreateStack
+                - cloudformation:DeleteStack
+                - cloudformation:DescribeStacks
+                - cloudformation:UpdateStack
+                - cloudformation:CreateChangeSet
+                - cloudformation:DeleteChangeSet
+                - cloudformation:DescribeChangeSet
+                - cloudformation:ExecuteChangeSet
+                - cloudformation:SetStackPolicy
+                - cloudformation:ValidateTemplate
+                Resource: "*"
+                Effect: Allow
+              - Action:
+                - codebuild:BatchGetBuilds
+                - codebuild:StartBuild
+                Resource: "*"
+                Effect: Allow
+              - Effect: Allow
+                Action:
+                - devicefarm:ListProjects
+                - devicefarm:ListDevicePools
+                - devicefarm:GetRun
+                - devicefarm:GetUpload
+                - devicefarm:CreateUpload
+                - devicefarm:ScheduleRun
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                - servicecatalog:ListProvisioningArtifacts
+                - servicecatalog:CreateProvisioningArtifact
+                - servicecatalog:DescribeProvisioningArtifact
+                - servicecatalog:DeleteProvisioningArtifact
+                - servicecatalog:UpdateProduct
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                - cloudformation:ValidateTemplate
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                - ecr:DescribeImages
+                Resource: "*"
