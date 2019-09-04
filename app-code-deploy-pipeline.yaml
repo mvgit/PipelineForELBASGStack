@@ -86,8 +86,8 @@ Resources:
               InputArtifacts:
                 - Name: TemplateSource
               Configuration:
-                ApplicationName: !Ref CodeDeployApplicationName
-                DeploymentGroupName: !Ref CodeDeployDeploymentGroupName
+                ApplicationName: !ImportValue ExNWCodeDeployApplicationName-1
+                DeploymentGroupName: !ImportValue ExNWCodeDeploymentGroup-1
               RunOrder: '1'
   PipelineRole:
     Type: AWS::IAM::Role

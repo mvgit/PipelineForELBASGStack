@@ -8,6 +8,10 @@ Description: 'AWS CloudFormation Sample Template AutoScalingScheduledAction: Cre
   create a stack from this template.'
 Parameters:
 #add a parameter for minsize and use it for count as well.
+  pRunVersion:
+    Type: Number
+    Description: Run version for export names
+    Default: 1
   pMinSize:
     Type: Number
     Description: MinSize for ASG
@@ -661,15 +665,15 @@ Outputs:
     Value: 
       Ref: WebServerGroup
     Export:
-      Name: ExNWWebServerGroup
+      Name: !Sub "ExNWWebServerGroup-${pRunVersion}"
   oALBName:
     Value: !GetAtt ApplicationLoadBalancer.LoadBalancerName
     Export:
-      Name: ExNWApplicationLoadBalancer
+      Name: !Sub "ExNWApplicationLoadBalancer-${pRunVersion}"
   oALBTargetGroupName:
     Value: !GetAtt ALBTargetGroup.TargetGroupName
     Export:
-      Name: ExNWALBTargetGroup
+      Name: !Sub "ExNWALBTargetGroup-${pRunVersion}"
   URL:
     Description: URL of the website
     Value:

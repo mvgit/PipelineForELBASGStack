@@ -48,7 +48,10 @@ Parameters:
   Email:
     Description: The email address where CodePipeline sends pipeline notifications
     Type: String
-
+  RunVersion:
+    Description: Run version
+    Type: String
+    Default: 1
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -112,7 +115,7 @@ Resources:
               RunOrder: '1'
         - Name: TestStage
           Actions:
-            - Name: CreateStack
+            - Name: CreateALB-ELB-Stack
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
@@ -141,7 +144,7 @@ Resources:
                 Capabilities: CAPABILITY_IAM,CAPABILITY_NAMED_IAM
                 RoleArn: !GetAtt [CFNRole, Arn]
                 StackName: CodeDeploymentStack
-                #TemplateConfiguration: !Sub "TemplateSource::${TestStackConfig}"
+                #TemplateConfiguration: !Sub "test-stack-configuration-cdr.json"
                 TemplatePath: !Sub "TemplateSource::CodeDeploymentResources.yaml"
               RunOrder: '1'
             - Name: ApproveTestStack
@@ -247,28 +250,28 @@ Resources:
             Statement:
               - Action:
                 - 's3:*'
-                - 'cloudformation:CreateStack'
-                - 'cloudformation:DescribeStacks'
-                - 'cloudformation:DeleteStack'
-                - 'cloudformation:UpdateStack'
-                - 'cloudformation:CreateChangeSet'
-                - 'cloudformation:ExecuteChangeSet'
-                - 'cloudformation:DeleteChangeSet'
-                - 'cloudformation:DescribeChangeSet'
-                - 'cloudformation:SetStackPolicy'
-                - 'iam:PassRole'
+                - 'cloudformation:*'
                 - 'sns:Publish'
-                - 'ec2:DescribeAccountAttributes'
-                - 'ec2:DescribeAddresses'
-                - 'ec2:DescribeInternetGateways'
-                - 'ec2:DescribeSecurityGroups'
-                - 'ec2:DescribeSubnets'
-                - 'ec2:DescribeVpcs'
-                - 'ec2:DescribeInstances'
-                - 'iam:CreateServiceLinkedRole'
-                - 'elasticloadbalancing:CreateTargetGroup'
-                - 'elasticloadbalancingv2:*'
-                - 'elasticloadbalancing:*'
-                - 'autoscaling:*'
+                # - 'ec2:DescribeAccountAttributes'
+                # - 'ec2:DescribeAddresses'
+                # - 'ec2:DescribeInternetGateways'
+                # - 'ec2:DescribeSecurityGroups'
+                # - 'ec2:DescribeSubnets'
+                # - 'ec2:DescribeVpcs'
+                # - 'ec2:DescribeInstances'
+                # - 'iam:CreateServiceLinkedRole'
+                # - 'elasticloadbalancing:CreateTargetGroup'
+                # - 'elasticloadbalancingv2:*'
+                # - 'elasticloadbalancing:*'
+                # - 'autoscaling:*'
                 Effect: Allow
                 Resource: '*'
+              - Action:
+                - iam:PassRole
+                Resource: "*"
+                Effect: Allow
+                Condition:
+                  StringEqualsIfExists:
+                    iam:PassedToService:
+                    - cloudformation.amazonaws.com
+                    - ec2.amazonaws.com

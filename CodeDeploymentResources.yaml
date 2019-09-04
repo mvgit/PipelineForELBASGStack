@@ -5,6 +5,12 @@ Description: 'AWS CloudFormation Sample Template AutoScalingScheduledAction: Cre
   check. **WARNING** This template creates one or more Amazon EC2 instances and an
   Application Load Balancer. You will be billed for the AWS resources used if you
   create a stack from this template.'
+Parameters:
+  pRunVersion:
+      Type: Number
+      Description: Run version for export names
+      Default: 1
+
 Resources:
   CodeDeployApplication:
     Type: AWS::CodeDeploy::Application
@@ -18,8 +24,9 @@ Resources:
         Ref: CodeDeployApplication
       #AutoRollbackConfiguration: 
       #  AutoRollbackConfiguration
-      AutoScalingGroups: 
-        - !ImportValue ExNWWebServerGroup
+      AutoScalingGroups:
+        - Fn::ImportValue:
+            !Sub "ExNWWebServerGroup-${pRunVersion}" 
       DeploymentConfigName: CodeDeployDefault.AllAtOnce
       # DeploymentStyle: 
       #     DeploymentOption: IN_PLACE
@@ -47,3 +54,15 @@ Resources:
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole
 
+Outputs:
+  oCodeDeployApplicationName:
+    Value: 
+      Ref: CodeDeployApplication
+    Export:
+      Name: !Sub "ExNWCodeDeployApplicationName-${pRunVersion}"
+  oCodeDeploymentGroupName:
+    Value: 
+      Ref: CodeDeploymentGroup
+    Export:
+      Name: !Sub "ExNWCodeDeploymentGroup-${pRunVersion}"
+      
